@@ -1,0 +1,60 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#build & cmake
+bin/
+obj/
+build/
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
+count_primes
+Makefile
+*cmake*/
+
+#clang
+.cache/*
+
+#Kdevelop
+.kde*/
+*.kdev*
+
+#VS stuff?
+CMakeSettings.json
+.vs\
+.vs/
+.vscode/
+.vscode\
+
+#jetbrains
+.idea*
