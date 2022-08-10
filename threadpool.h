@@ -1,5 +1,5 @@
-#ifndef THREADPOOL_LIBRARY_H
-#define THREADPOOL_LIBRARY_H
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
 
 #include <mutex>
 #include <queue>
@@ -36,4 +36,4 @@ private:
     static ThreadPool *m_ThreadPool;
 };
 
-#endif //THREADPOOL_LIBRARY_H
+#endif //THREADPOOL_H

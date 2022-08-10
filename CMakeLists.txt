@@ -3,4 +3,4 @@ project(ThreadPool)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_library(threadpool library.cpp)
+add_library(threadpool threadpool.cpp)

@@ -1,4 +1,4 @@
-#include "library.h"
+#include "threadpool.h"
 
 ThreadPool::ThreadPool() : shouldStop(false) {
     const unsigned int NUM_OF_THREADS = std::thread::hardware_concurrency();
