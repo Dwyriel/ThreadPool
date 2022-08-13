@@ -17,6 +17,8 @@ public:
 
     bool isBusy();
 
+    void Join();
+
     static void Start();
 
     static void Stop();
@@ -29,6 +31,7 @@ private:
     void ThreadLoop();
 
     bool shouldStop;
+    bool joined;
     std::mutex mutex;
     std::condition_variable mutex_condition;
     std::vector<std::thread> threads;

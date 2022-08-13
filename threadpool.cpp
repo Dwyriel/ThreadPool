@@ -1,6 +1,6 @@
 #include "threadpool.h"
 
-ThreadPool::ThreadPool() : shouldStop(false) {
+ThreadPool::ThreadPool() : shouldStop(false),joined(false){
     const unsigned int NUM_OF_THREADS = std::thread::hardware_concurrency();
     threads.reserve(NUM_OF_THREADS);
     for (unsigned int i = 0; i < NUM_OF_THREADS; i++)
@@ -8,6 +8,10 @@ ThreadPool::ThreadPool() : shouldStop(false) {
 }
 
 ThreadPool::~ThreadPool() {
+    if(joined){
+        threads.clear();
+        return;
+    }
     {
         std::unique_lock<std::mutex> lock(mutex);
         shouldStop = true;
@@ -34,6 +38,18 @@ bool ThreadPool::isBusy() {
         isBusy = !jobs.empty();
     }
     return isBusy;
+}
+
+void ThreadPool::Join() {
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        shouldStop = true;
+    }
+    mutex_condition.notify_all();
+    for (std::thread &thread: threads)
+        if (thread.joinable())
+            thread.join();
+    joined = true;
 }
 
 void ThreadPool::ThreadLoop() {
