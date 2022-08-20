@@ -13,7 +13,8 @@ public:
 
     ~ThreadPool();
 
-    void QueueJob(const std::function<void()> &job);
+    template<typename Func, typename... Args>
+    void QueueJob(Func job, Args &&... args);
 
     bool isBusy();
 
