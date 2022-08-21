@@ -24,7 +24,7 @@ ThreadPool::~ThreadPool() {
 }
 
 template<typename Func, typename... Args>
-void ThreadPool::QueueJob(Func job, Args&&... args) {
+void ThreadPool::QueueJob(Func job, Args &&... args) {
     {
         std::unique_lock<std::mutex> lock(mutex);
         jobs.push(std::bind(job, std::forward<Args>(args)...));
@@ -71,19 +71,38 @@ void ThreadPool::ThreadLoop() {
 }
 
 ThreadPool *ThreadPool::m_ThreadPool = nullptr;
+bool ThreadPool::atExitCalled = false;
 
 void ThreadPool::Start() {
-    m_ThreadPool = new ThreadPool();
+    if (m_ThreadPool == nullptr) {
+        m_ThreadPool = new ThreadPool();
+        if(!atExitCalled) {
+            std::atexit(Stop);
+            signal(SIGINT, StopBySignal);
+            signal(SIGABRT, StopBySignal);
+            signal(SIGTERM, StopBySignal);
+            signal(SIGTSTP, StopBySignal);
+            atExitCalled = true;
+        }
+    }
 }
 
 void ThreadPool::Stop() {
-    delete m_ThreadPool;
-    m_ThreadPool = nullptr;
+    if (m_ThreadPool != nullptr) {
+        delete m_ThreadPool;
+        m_ThreadPool = nullptr;
+    }
 }
 
-void ThreadPool::QueueJob_S(const std::function<void()> &job) {
-    if(m_ThreadPool != nullptr)
-        m_ThreadPool->QueueJob(job);
+void ThreadPool::StopBySignal(int i) {
+    ThreadPool::Stop();
+}
+
+template<typename Func, typename... Args>
+void ThreadPool::QueueJob_S(Func &&job, Args &&... args) {
+    if (m_ThreadPool == nullptr)
+        ThreadPool::Start();
+    m_ThreadPool->QueueJob(job, args...);
 }
 
 bool ThreadPool::isBusy_S() {

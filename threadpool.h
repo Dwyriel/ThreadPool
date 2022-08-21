@@ -6,6 +6,7 @@
 #include <thread>
 #include <condition_variable>
 #include <functional>
+#include <csignal>
 
 class ThreadPool {
 public:
@@ -24,12 +25,15 @@ public:
 
     static void Stop();
 
-    static void QueueJob_S(const std::function<void()> &job);
+    template<typename Func, typename... Args>
+    static void QueueJob_S(Func &&job, Args &&... args);
 
     static bool isBusy_S();
 
 private:
     void ThreadLoop();
+
+    static void StopBySignal(int i);
 
     bool shouldStop;
     bool joined;
@@ -38,6 +42,7 @@ private:
     std::vector<std::thread> threads;
     std::queue<std::function<void()>> jobs;
     static ThreadPool *m_ThreadPool;
+    static bool atExitCalled;
 };
 
 #endif //THREADPOOL_H
