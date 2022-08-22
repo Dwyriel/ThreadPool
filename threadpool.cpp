@@ -78,10 +78,10 @@ void ThreadPool::Start() {
         m_ThreadPool = new ThreadPool();
         if(!atExitCalled) {
             std::atexit(Stop);
-            signal(SIGINT, StopBySignal);
+            /*signal(SIGINT, StopBySignal);
             signal(SIGABRT, StopBySignal);
             signal(SIGTERM, StopBySignal);
-            signal(SIGTSTP, StopBySignal);
+            signal(SIGTSTP, StopBySignal);*/
             atExitCalled = true;
         }
     }
@@ -96,6 +96,7 @@ void ThreadPool::Stop() {
 
 void ThreadPool::StopBySignal(int i) {
     ThreadPool::Stop();
+    //std::exit(1);
 }
 
 template<typename Func, typename... Args>
