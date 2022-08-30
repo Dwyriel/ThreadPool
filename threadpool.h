@@ -32,6 +32,8 @@ public:
 
     static bool isBusy_S();
 
+    static bool Join_S();
+
 private:
     void ThreadLoop(int i);
 

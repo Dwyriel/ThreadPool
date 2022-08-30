@@ -125,3 +125,7 @@ bool ThreadPool::isBusy_S() {
         return false;
     return m_ThreadPool->isBusy();
 }
+
+bool ThreadPool::Join_S() {
+    m_ThreadPool->Join();
+}
