@@ -3,13 +3,17 @@
 ThreadPool::ThreadPool() : shouldStop(false), joined(false) {
     const unsigned int NUM_OF_THREADS = std::thread::hardware_concurrency();
     threads.reserve(NUM_OF_THREADS);
-    for (unsigned int i = 0; i < NUM_OF_THREADS; i++)
-        threads.emplace_back(std::thread(&ThreadPool::ThreadLoop, this));
+    isWorking.reserve(NUM_OF_THREADS);
+    for (unsigned int i = 0; i < NUM_OF_THREADS; i++) {
+        isWorking.push_back(false);
+        threads.emplace_back(std::thread(&ThreadPool::ThreadLoop, this, i));
+    }
 }
 
 ThreadPool::~ThreadPool() {
     if (joined) {
         threads.clear();
+        isWorking.clear();
         return;
     }
     {
@@ -21,6 +25,7 @@ ThreadPool::~ThreadPool() {
         if (thread.joinable())
             thread.join();
     threads.clear();
+    isWorking.clear();
 }
 
 template<typename Func, typename... Args>
@@ -33,15 +38,21 @@ void ThreadPool::QueueJob(Func job, Args &&... args) {
 }
 
 bool ThreadPool::isBusy() {
-    bool isBusy;
-    {
-        std::unique_lock<std::mutex> lock(mutex);
-        isBusy = !jobs.empty();
-    }
-    return isBusy;
+    std::unique_lock<std::mutex> lock(mutex);
+    for (bool threadWorking: isWorking)
+        if (threadWorking)
+            return threadWorking;
+    return false;
 }
 
 void ThreadPool::Join() {
+    /*while (isBusy() || !jobs.empty())
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));*/
+    std::unique_lock<std::mutex> lock(joinMutex);
+    joinMutex_condition.wait(lock, [this]{ return !isBusy() && jobs.empty();});
+}
+
+void ThreadPool::Stop() {
     {
         std::unique_lock<std::mutex> lock(mutex);
         shouldStop = true;
@@ -53,9 +64,11 @@ void ThreadPool::Join() {
     joined = true;
 }
 
-void ThreadPool::ThreadLoop() {
+void ThreadPool::ThreadLoop(const int i) {
     while (true) {
         std::function<void()> job;
+        isWorking[i] = false;
+        joinMutex_condition.notify_all();
         {
             std::unique_lock<std::mutex> lock(mutex);
             mutex_condition.wait(lock, [this] { return !jobs.empty() || shouldStop; });
@@ -64,6 +77,7 @@ void ThreadPool::ThreadLoop() {
             if (!jobs.empty()) {
                 job = jobs.front();
                 jobs.pop();
+                isWorking[i] = true;
             }
         }
         job();
@@ -73,11 +87,11 @@ void ThreadPool::ThreadLoop() {
 ThreadPool *ThreadPool::m_ThreadPool = nullptr;
 bool ThreadPool::atExitCalled = false;
 
-void ThreadPool::Start() {
+void ThreadPool::Start_S() {
     if (m_ThreadPool == nullptr) {
         m_ThreadPool = new ThreadPool();
-        if(!atExitCalled) {
-            std::atexit(Stop);
+        if (!atExitCalled) {
+            std::atexit(Stop_S);
             /*signal(SIGINT, StopBySignal);
             signal(SIGABRT, StopBySignal);
             signal(SIGTERM, StopBySignal);
@@ -87,7 +101,7 @@ void ThreadPool::Start() {
     }
 }
 
-void ThreadPool::Stop() {
+void ThreadPool::Stop_S() {
     if (m_ThreadPool != nullptr) {
         delete m_ThreadPool;
         m_ThreadPool = nullptr;
@@ -95,14 +109,14 @@ void ThreadPool::Stop() {
 }
 
 void ThreadPool::StopBySignal(int i) {
-    ThreadPool::Stop();
+    ThreadPool::Stop_S();
     //std::exit(1);
 }
 
 template<typename Func, typename... Args>
 void ThreadPool::QueueJob_S(Func &&job, Args &&... args) {
     if (m_ThreadPool == nullptr)
-        ThreadPool::Start();
+        ThreadPool::Start_S();
     m_ThreadPool->QueueJob(job, args...);
 }
 

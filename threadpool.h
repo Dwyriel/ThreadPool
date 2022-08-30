@@ -21,9 +21,11 @@ public:
 
     void Join();
 
-    static void Start();
+    void Stop();
 
-    static void Stop();
+    static void Start_S();
+
+    static void Stop_S();
 
     template<typename Func, typename... Args>
     static void QueueJob_S(Func &&job, Args &&... args);
@@ -31,15 +33,18 @@ public:
     static bool isBusy_S();
 
 private:
-    void ThreadLoop();
+    void ThreadLoop(int i);
 
     static void StopBySignal(int i);
 
     bool shouldStop;
     bool joined;
     std::mutex mutex;
+    std::mutex joinMutex;
     std::condition_variable mutex_condition;
+    std::condition_variable joinMutex_condition;
     std::vector<std::thread> threads;
+    std::vector<bool> isWorking;
     std::queue<std::function<void()>> jobs;
     static ThreadPool *m_ThreadPool;
     static bool atExitCalled;
